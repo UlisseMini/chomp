@@ -21,10 +21,23 @@ class Network():
     def forward(self, x):
         x = np.array(x)
         for W, b in zip(self.weights, self.biases):
-            x = relu(W @ x + b)
+            x = W @ x + b
 
         return x
 
+
+def simplify(op: ast.Expr):
+    "Simplify a linear expr into m*x + b form"
+    if isinstance(op, ast.Constant):
+        return op
+    if isinstance(op, ast.Name):
+        return op
+    elif isinstance(op, ast.Add):
+        return op
+    elif isinstance(op, ast.Mult):
+        return op
+    else:
+        raise ValueError(f'unknown op {op}')
 
 class Compiler():
     def __init__(self):
@@ -42,7 +55,7 @@ class Compiler():
         # get arg names
         args = [arg.arg for arg in fn.args.args]
 
-        self.weights = [[0] * len(args)]
+        self.weights = [[1] * len(args)]
         self.biases = [0] * len(args)
         self.vindex: Dict[str,int] = {arg: i for i, arg in enumerate(args)}
 
@@ -53,6 +66,7 @@ class Compiler():
         assert isinstance(op, ast.BinOp)
         self.binop(op)
 
+
     def binop(self, op: ast.BinOp):
         if isinstance(op.op, ast.Add):
             assert isinstance(op.left, ast.Name)
@@ -61,8 +75,15 @@ class Compiler():
             variable = op.left.id
             constant = op.right.value
             vindex = self.vindex[variable]
-            self.biases[vindex] = constant
-            self.weights[0][vindex] = 1
+            self.biases[vindex] += constant
+        elif isinstance(op.op, ast.Mult):
+            assert isinstance(op.left, ast.Name)
+            assert isinstance(op.right, ast.Constant)
+
+            variable = op.left.id
+            constant = op.right.value
+            vindex = self.vindex[variable]
+            self.weights[0][vindex] *= constant
         else:
             raise ValueError(f'Unknown op {op.op}')
 
