@@ -4,8 +4,8 @@ import chomp
 def main():
     import sys
     s = sys.stdin.read()
-    tree = ast.parse(s)
-    print(chomp.compile(tree))
+    net = chomp.compile(s)
+    print(net)
 
 
 if __name__ == '__main__':
